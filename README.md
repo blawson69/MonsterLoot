@@ -44,7 +44,7 @@ The default bestiary includes all monsters from the SRD. If you wish to add mons
 To add monsters for import, put each one on a separate line of your handout. Include the monster name, type (no subtypes), challenge rating (CR), and any spoils all separated by a pipe "|". The spoils are delimited with double colons "::". If there are no spoils, you must still include the pipe. If you need to add a description to a spoil, put a tilde "~" between it and the name of the spoil:
 
 ~~~
-Name of Monster|Type|CR|Spoil 1~Description of Spoil 1::Spoil 2~Description of Spoil 2
+Name of Monster|Type|CR|Spoil 1::Spoil 2~Description of Spoil 2
 Name of Monster|Type|CR|
 ~~~
 If your monster is venomous, the poison description goes last, right after another pipe. This may mean you have two pipes in the middle of your line. Use the standard "roll average (die expression)" format in your description so MonsterLoot can process die rolls correctly. Cutting and pasting from an online source makes this super easy.
