@@ -1,0 +1,10 @@
+These files are used to add monsters to MonsterLoot.
+
+To use:
+- Create a handout and name it "Bestiary" plus something along the lines of the name of the text file.
+- Copy and paste the contents of the text file directly into the handout. It should put each monster in a separate paragraph.
+- Open the MonsterLoot config using `!spoils --config` and click the import button.
+
+Feel free to edit them to your liking before import.
+
+Enjoy!
