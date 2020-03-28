@@ -733,7 +733,7 @@ var MonsterLoot = MonsterLoot || (function () {
                 _.each(errs, function (err) { message += '<li>' + err + '</li>'; });
                 message += '</ul>';
             }
-            showDialog(title, message);
+            showDialog(title, message, 'GM');
         }, 250);
     },
 
@@ -744,7 +744,7 @@ var MonsterLoot = MonsterLoot || (function () {
             var parsedData = '';
             _.each(state['MonsterLoot'].monsters, function (monster) { parsedData += stringifyForExport(monster); });
             bestiary.set({ notes: parsedData });
-            showDialog('Export Complete', 'Bestiary has exported successfully to "Exported Bestiary".');
+            showDialog('Export Complete', 'Bestiary has exported successfully to "Exported Bestiary".', 'GM');
         }
     },
 
