@@ -328,7 +328,8 @@ var MonsterLoot = MonsterLoot || (function () {
             var controllers = char.get('controlledby').split(',');
             var str_attr = findObjs({type: 'attribute', characterid: char.get('id'), name: 'strength'}, {caseInsensitive: true});
             var str = (_.size(str_attr) > 0) ? str_attr[0].get('current') : 0;
-            return (_.find(controllers, function (x) { return x == player_id; }) && _.indexOf(char_tokens, char.get('id')) != -1 && parseInt(str) > 0);
+            if (playerIsGM(player_id)) return (_.indexOf(char_tokens, char.get('id')) != -1 && char.get('controlledby') != '' && parseInt(str) > 0);
+            else return (_.find(controllers, function (x) { return x == player_id; }) && _.indexOf(char_tokens, char.get('id')) != -1 && parseInt(str) > 0);
         });
         return chars;
     },
