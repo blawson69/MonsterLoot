@@ -16,7 +16,7 @@ var MonsterLoot = MonsterLoot || (function () {
 
     //---- INFO ----//
 
-    var version = '1.2.1',
+    var version = '1.3',
     debugMode = false,
     MARKERS,
     ALT_MARKERS = [{name:'red', tag: 'red', url:"#C91010"}, {name: 'blue', tag: 'blue', url: "#1076C9"}, {name: 'green', tag: 'green', url: "#2FC910"}, {name: 'brown', tag: 'brown', url: "#C97310"}, {name: 'purple', tag: 'purple', url: "#9510C9"}, {name: 'pink', tag: 'pink', url: "#EB75E1"}, {name: 'yellow', tag: 'yellow', url: "#E5EB75"}, {name: 'dead', tag: 'dead', url: "X"}],
@@ -128,7 +128,7 @@ var MonsterLoot = MonsterLoot || (function () {
         var charAttrs = findObjs({type: 'attribute', characterid: char_id}, {caseInsensitive: true});
 
         // Validate chosen (or default) character as looter
-        var looters = getCharsFromPlayerID(msg.playerid);
+        var looters = getCharsFromPlayerID(msg.playerid, token.get('pageid'));
         if (_.size(looters) == 1) looter_id = looters[0].get('id');
         if (looter_id == null) {
             // If more than one character, make character selection
@@ -272,7 +272,7 @@ var MonsterLoot = MonsterLoot || (function () {
         }
 
         // Validate chosen (or default) character as looter
-        var looters = getCharsFromPlayerID(msg.playerid);
+        var looters = getCharsFromPlayerID(msg.playerid, token.get('pageid'));
         if (_.size(looters) == 1) looter_id = looters[0].get('id');
         if (looter_id == null) {
             // If more than one character, make character selection
@@ -321,13 +321,14 @@ var MonsterLoot = MonsterLoot || (function () {
     },
 
     // Get all player controlled characters that are not "utility characters"
-    getCharsFromPlayerID = function (player_id) {
-        var chars = findObjs({type: 'character', archived: false});
+    getCharsFromPlayerID = function (player_id, page_id) {
+        var char_tokens = [], chars = findObjs({type: 'character', archived: false});
+        _.each(findObjs({type: 'graphic', pageid: page_id}), function (token) { if (token.get('represents') !== '') char_tokens.push(token.get('represents')); });
         chars = _.filter(chars, function (char) {
             var controllers = char.get('controlledby').split(',');
             var str_attr = findObjs({type: 'attribute', characterid: char.get('id'), name: 'strength'}, {caseInsensitive: true});
             var str = (_.size(str_attr) > 0) ? str_attr[0].get('current') : 0;
-            return (_.find(controllers, function (x) { return x == player_id; }) && parseInt(str) > 0);
+            return (_.find(controllers, function (x) { return x == player_id; }) && _.indexOf(char_tokens, char.get('id')) != -1 && parseInt(str) > 0);
         });
         return chars;
     },
