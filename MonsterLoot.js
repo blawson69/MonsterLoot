@@ -169,7 +169,6 @@ var MonsterLoot = MonsterLoot || (function () {
             // Get any weapons from the Actions section
             var nat = new RegExp('^(' + NATURAL_WEAPONS.join('|') + ').*$', 'i'), weapons = [];
             var actions = _.filter(charAttrs, function (attr) {
-                if (attr.get('name').match(/^repeating_(npc)?action_[^_]+_name$/) !== null) log('aattribute: ' + attr.get('current'));
                 return attr.get('name').match(/^repeating_(npc)?action_[^_]+_name$/) !== null && attr.get('current').match(nat) == null
                 && attr.get('current').match(/(\(recharge|\(costs|day\)).*$/gi) == null;
             });
