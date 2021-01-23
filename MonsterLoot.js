@@ -18,7 +18,7 @@ var MonsterLoot = MonsterLoot || (function () {
     //---- INFO ----//
 
     var version = '2.0',
-    debugMode = true,
+    debugMode = false,
     MARKERS,
     ALT_MARKERS = [{name:'red', tag: 'red', url:"#C91010"}, {name: 'blue', tag: 'blue', url: "#1076C9"}, {name: 'green', tag: 'green', url: "#2FC910"}, {name: 'brown', tag: 'brown', url: "#C97310"}, {name: 'purple', tag: 'purple', url: "#9510C9"}, {name: 'pink', tag: 'pink', url: "#EB75E1"}, {name: 'yellow', tag: 'yellow', url: "#E5EB75"}, {name: 'dead', tag: 'dead', url: "X"}],
     styles = {
