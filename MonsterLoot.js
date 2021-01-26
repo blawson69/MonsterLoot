@@ -718,47 +718,72 @@ var MonsterLoot = MonsterLoot || (function () {
             handout.get('notes', function (notes) {
                 var items = processHandout(notes);
                 _.each(items, function (item) {
+                    var fail = false;
                     if (item.search(/\|/) > 0) {
                         let parts = item.split(/\s*\|\s*/), tmpMonster = {};
                         if (_.size(parts) == 4 || _.size(parts) == 5) {
                             tmpMonster.name = parts[0];
-                            tmpMonster.type = parts[1];
-                            tmpMonster.cr = parts[2];
-                            tmpMonster.spoils = [];
-                            var spoils = parts[3].split('::');
-                            _.each(spoils, function (item) {
-                                var bits = item.split('~');
-                                var spoil = {name: bits[0]};
-                                if (spoil.name.indexOf('(@') != -1) {
-                                    spoil.count = spoil.name.replace(/.*\(\@([^\@])\@\).*/, '$1');
-                                    spoil.name = spoil.name.replace(' (@' + spoil.count + '@)', '');
-                                }
-                                if (typeof bits[1] != 'undefined') spoil.desc = bits[1];
-                                tmpMonster.spoils.push(spoil);
-                            });
-                            if (typeof parts[4] != 'undefined' && parts[4] != '') {
-                                var poison = parts[4].split('~');
-                                tmpMonster.poison_name = poison[0];
-                                tmpMonster.poison = poison[1];
+                            if (parts[1].match(/^(humanoid|beast|giant|dragon|fey|undead|fiend|celestial|monstrosity|construct|aberration|elemental|ooze|plant)$/i) != null) {
+                                tmpMonster.type = parts[1];
+                            } else {
+                                fail = true;
+                                errs.push(tmpMonster.name + ': Bad Monster Type.');
+                            }
+                            if (parts[2].match(/^(1\/8|1\/4|1\/2|\d{1,2})$/) != null) {
+                                tmpMonster.cr = parts[2];
+                            } else {
+                                fail = true;
+                                errs.push(tmpMonster.name + ': Bad CR.');
                             }
 
-                            if (tmpMonster.type.match(/^(humanoid|beast|giant|dragon|fey|undead|fiend|celestial|monstrosity|construct|aberration|elemental|ooze|plant)$/i) != null
-                            && tmpMonster.cr.match(/^(1\/8|1\/4|1\/2|\d{1,2})$/) != null) {
+                            tmpMonster.spoils = [];
+                            if (typeof parts[3] != 'undefined') {
+                                if (parts[3] != '') {
+                                    var spoils = parts[3].split('::');
+                                    _.each(spoils, function (item) {
+                                        var bits = item.split('~');
+                                        var spoil = {name: bits[0]};
+                                        if (spoil.name.indexOf('(@') != -1) {
+                                            spoil.count = spoil.name.replace(/.+\@([^\@]+)\@.+/, '$1');
+                                            spoil.name = spoil.name.replace(' (@' + spoil.count + '@)', '');
+                                        }
+                                        if (typeof bits[1] != 'undefined') spoil.desc = bits[1];
+                                        tmpMonster.spoils.push(spoil);
+                                    });
+                                }
+                            } else {
+                                fail = true;
+                                errs.push(tmpMonster.name + ': No spoils/pipe after CR.');
+                            }
+
+                            if (typeof parts[4] != 'undefined' && parts[4] != '') {
+                                if (parts[4].indexOf('~') != -1) {
+                                    var poison = parts[4].split('~');
+                                    tmpMonster.poison_name = poison[0];
+                                    tmpMonster.poison = poison[1];
+                                } else {
+                                    fail = true;
+                                    errs.push(tmpMonster.name + ': No poison name.');
+                                }
+                            }
+
+                            if (fail !== true) {
                                 state['MonsterLoot'].monsters = _.reject(state['MonsterLoot'].monsters, function (x) { return x.name == tmpMonster.name; });
                                 state['MonsterLoot'].monsters.push(tmpMonster);
                                 m_count++;
-                            } else errs.push(item.substr(0, 16) + (item.length > 16 ? '...' : ''));
-                        } else errs.push(item.substr(0, 16) + (item.length > 16 ? '...' : ''));
-                    } else errs.push(item.substr(0, 16) + (item.length > 16 ? '...' : ''));
+                            }
+                        } else errs.push(parts[0] + ': Incorrect format.');
+                    } else errs.push(item.substr(0, 16) + (item.length > 16 ? '...' : '') + ': No pipes.');
                 });
             });
         });
 
 
         setTimeout(function () {
-            var title = 'Import Result', message = 'You imported ' + (m_count == 1 ? '1 monster' : m_count + ' monsters') + '.';
+            var b_count = _.size(bestiaries);
+            var title = 'Import Result', message = 'You imported ' + (m_count == 1 ? '1 monster' : m_count + ' monsters') + ' from ' + (b_count == 1 ? '1 handout' : b_count + ' handouts') + '.';
             if (_.size(errs) > 0) {
-                message += (_.size(errs) == 1 ? '1 incorrectly formatted monster was' : _.size(errs) + ' incorrectly formatted monsters were') + ' not imported:<ul>';
+                message += '<br><br>' + (_.size(errs) == 1 ? '1 error was' : _.size(errs) + ' errors were') + ' encountered:<ul>';
                 _.each(errs, function (err) { message += '<li>' + err + '</li>'; });
                 message += '</ul>';
             }
@@ -794,9 +819,15 @@ var MonsterLoot = MonsterLoot || (function () {
 
     processHandout = function (notes = '') {
         var retval = [], text = notes.trim();
-        text = text.replace(/<p[^>]*>/gi, '<p>').replace(/\n(<p>)?/gi, '</p><p>').replace(/<br>/gi, '</p><p>');
-        text = text.replace(/<\/?(span|div|pre|img|code|b|i|h1|h2|h3|h4|h5|ol|ul|pre)[^>]*>/gi, '');
-        if (text != '' && /<p>.*?<\/p>/g.test(text)) retval = text.match(/<p>.*?<\/p>/g).map( l => l.replace(/^<p>(.*?)<\/p>$/,'$1'));
+        if (text.startsWith('<div>')) {
+            text = text.replace(/<div[^>]*>/gi, '<div>').replace(/\n(<div>)?/gi, '</div><div>').replace(/<br>/gi, '</div><div>');
+            text = text.replace(/<\/?(span|p|pre|img|code|b|i|h1|h2|h3|h4|h5|ol|ul|pre)[^>]*>/gi, '');
+            if (text != '' && /<div>.*?<\/div>/g.test(text)) retval = text.match(/<div>.*?<\/div>/g).map( l => l.replace(/^<div>(.*?)<\/div>$/,'$1'));
+        } else {
+            text = text.replace(/<p[^>]*>/gi, '<p>').replace(/\n(<p>)?/gi, '</p><p>').replace(/<br>/gi, '</p><p>');
+            text = text.replace(/<\/?(span|div|pre|img|code|b|i|h1|h2|h3|h4|h5|ol|ul|pre)[^>]*>/gi, '');
+            if (text != '' && /<p>.*?<\/p>/g.test(text)) retval = text.match(/<p>.*?<\/p>/g).map( l => l.replace(/^<p>(.*?)<\/p>$/,'$1'));
+        }
         return _.compact(retval);
     },
 
