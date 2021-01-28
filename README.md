@@ -1,5 +1,7 @@
 # MonsterLoot
 > **Database updated in version 2.0!** The database is now more consistent in language and provides more craftable items. If you are using a previous version, the default database will be automatically reset. If you have imported additions or changes, you will need to update your handouts and re-import them. [See below](#bestiary) for more information.
+>
+> Also added the option to hide the spoils from players. This can be turned on in the config menu (`!spoils --config`). When on, spoils will be whispered to the GM only. If LootGenerator is installed, spoils will be saved as whispered as well.
 
 This [Roll20](http://roll20.net/) script gives players an easy way to loot monsters and NPCs, gathering resources specific to each creature and its type. They can take the hide from griffon or the scales from a dragon, etc. If a creature wields a weapon, that actual weapon can be looted from the body. Poison can also be extracted from certain creatures that have poison. Each creature on the map can only be looted once, preventing players from trying to squeeze them all dry with multiple attempts. MonsterLoot relies on a database that can be modified to your liking, and is for use with the [5e Shaped Sheet](http://github.com/mlenser/roll20-character-sheets/tree/master/5eShaped) and the D&D 5th Edition OGL Sheet.
 
@@ -41,7 +43,7 @@ The exact method required, along with other components needed, the time necessar
 ## LootGenerator Integration
 If a monster is a humanoid, human-shaped, or formerly human, it often carries coins and personal items on its body. When [LootGenerator](https://github.com/blawson69/LootGenerator) is installed, MonsterLoot will use it to generate random coins and mundane items to be found on the body of each creature based on its challenge rating. This gives a little more realism and variety to the looting process. It will honor the default values you have set in that script, so for instance if you have mundane items turned off, none will be generated.
 
-LootGenerator also has a simple yet robust method of distributing loot to players and saving undistributed collections for later distribution. When LootGenerator is installed, looted items including poison are sent to LootGenerator to be distributed in the same way it handles its own generated loot.
+LootGenerator also has a simple yet robust method of distributing loot to players and saving undistributed collections for later distribution. When LootGenerator is installed, looted items including poison are sent to LootGenerator to be distributed in the same way it handles its own generated loot. If you are hiding spoils from players, they will be saved to LootGenerator as hidden as well.
 
 ## PC Sheets
 Unique NPCs created using a PC character sheet can also be looted. MonsterLoot will gather all items from the Offense, Utility, and Equipment sections of the Shaped sheet, or the Equipment section of the OGL sheet. No spoils will be determined even if the character is a monster, but you may add items into any of the sections previously listed.

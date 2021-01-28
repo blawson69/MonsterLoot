@@ -40,6 +40,7 @@ var MonsterLoot = MonsterLoot || (function () {
         if (typeof state['MonsterLoot'].looted == 'undefined') state['MonsterLoot'].looted = [];
         if (typeof state['MonsterLoot'].extracted == 'undefined') state['MonsterLoot'].extracted = [];
         if (typeof state['MonsterLoot'].allowFumbles == 'undefined') state['MonsterLoot'].allowFumbles = true;
+        if (typeof state['MonsterLoot'].hideResults == 'undefined') state['MonsterLoot'].hideResults = false;
         if (typeof state['MonsterLoot'].showPlayersRolls == 'undefined') state['MonsterLoot'].showPlayersRolls = true;
         if (typeof state['MonsterLoot'].useMarker == 'undefined') state['MonsterLoot'].useMarker = false;
         if (typeof state['MonsterLoot'].addMarker == 'undefined') state['MonsterLoot'].addMarker = false;
@@ -119,13 +120,22 @@ var MonsterLoot = MonsterLoot || (function () {
             return;
         }
 
+        var char = getObj('character', token.get('represents'));
         if (_.find(state['MonsterLoot'].looted, function (id) { return id == token_id; })) {
-            showDialog('', token.get('name') + ' has already been looted.', msg.who);
+            var tmsg = token.get('name') + ' has already been looted.';
+            if (char) {
+                var tm = getMonster(char);
+                if (!_.find(state['MonsterLoot'].extracted, function (id) { return id == token.get('id'); }) && typeof tm.poison_name != 'undefined') {
+                    tmsg += '<hr style="' + styles.hr + '">Poison has yet to be extracted from ' + token.get('name') + '.';
+                    tmsg += '<div style=\'' + styles.buttonWrapper + '\'><a style=\'' + styles.button + '\' href="!spoils --extract --id|' + token_id + '" title="Roll to attempt safe extraction">Attempt Extraction</a></div>';
+                }
+
+            }
+            showDialog('', tmsg, msg.who);
             return;
         }
 
         // Validate selected token as character
-        var char = getObj('character', token.get('represents'));
         if (!char) {
             showDialog('', 'Token does not represent a character!', msg.who);
             return;
@@ -243,8 +253,14 @@ var MonsterLoot = MonsterLoot || (function () {
         if (_.size(treasure) > 0) loot.push(treasure);
         loot = _.flatten(loot);
 
-        var title = 'Spoils from ' + token.get('name');
-        message = (_.size(loot) != 0) ? looter_name + ', you got: ' + addDescriptions(loot, monster.spoils) : looter_name + ', you found nothing of use.';
+        // Generate display
+        var gm_message = '', title = 'Spoils from ' + token.get('name');
+        if (_.size(loot) != 0) {
+            if (state['MonsterLoot'].hideResults) {
+                message = looter_name + ', you gathered some spoils!';
+                gm_message = looter_name + ' got: ' + addDescriptions(loot, monster.spoils);
+            } else message = looter_name + ', you got: ' + addDescriptions(loot, monster.spoils);
+        } else message = looter_name + ', you found nothing of use.';
         if (typeof roll_display != 'undefined' && state['MonsterLoot'].showPlayersRolls) message += '<br>' + roll_display;
 
         // Extracting poison is a completely different operation!
@@ -254,9 +270,11 @@ var MonsterLoot = MonsterLoot || (function () {
         }
 
         showDialog(title, message);
+        if (gm_message != '') showDialog(title, gm_message, 'GM');
+
         state['MonsterLoot'].looted.push(token_id);
         if (state['MonsterLoot'].useMarker) token.set('status_' + state['MonsterLoot'].marker, state['MonsterLoot'].addMarker);
-        if (hasLootGen()) LootGenerator.saveLoot(title, coins, treasure, looter_name);
+        if (hasLootGen() && _.size(loot) != 0) LootGenerator.saveLoot(title, coins, treasure, looter_name, state['MonsterLoot'].hideResults);
     },
 
     commandExtractVenom = function (msg) {
@@ -322,10 +340,13 @@ var MonsterLoot = MonsterLoot || (function () {
 
         // DMG gives a flat DC of 20, but let's give some wiggle room
         // based on the monster's challenge rating
-        var dc_mod = monster_cr == 0 ? -3 : monster_cr / 5 - 2;
+        var dc_mod = monster_cr == 0 ? -3 : monster_cr / 5 - 2, gm_message = '';
         if (roll_result.final >= 20 + dc_mod) {
             title = 'Extraction Successful';
-            message = looter_name + ', you got: ' + monster.poison_name + '.<br><br>This poison has the following affect:<br>' + monster.poison;
+            if (state['MonsterLoot'].hideResults) {
+                message = looter_name + ', your poison extraction is a success!';
+                gm_message = looter_name + ' got: ' + monster.poison_name + '.<br><br>This poison has the following affect:<br>' + monster.poison;
+            } else message = looter_name + ', you got: ' + monster.poison_name + '.<br><br>This poison has the following affect:<br>' + monster.poison;
         } else if (roll_result.base == 1 && state['MonsterLoot'].allowFumbles) {
             title = '☠️ <span style="color: crimson;">Poisoned!</span>';
             var desc = monster.poison;
@@ -337,7 +358,9 @@ var MonsterLoot = MonsterLoot || (function () {
         }
 
         showDialog(title, message + (state['MonsterLoot'].showPlayersRolls ? '<br>' + roll_display : ''));
-        if (title == 'Extraction Successful' && hasLootGen()) LootGenerator.saveLoot(monster.poison_name, '', [monster.poison_name], looter_name);
+        if (gm_message != '') showDialog(title, gm_message, 'GM');
+
+        if (title == 'Extraction Successful' && hasLootGen()) LootGenerator.saveLoot(monster.name + ' (Poison)', '', [monster.poison_name], looter_name, state['MonsterLoot'].hideResults);
         state['MonsterLoot'].extracted.push(token_id);
     },
 
@@ -668,6 +691,7 @@ var MonsterLoot = MonsterLoot || (function () {
             if (action[0] == 'show-toggle') state['MonsterLoot'].showPlayersRolls = !state['MonsterLoot'].showPlayersRolls;
             if (action[0] == 'marker-toggle') state['MonsterLoot'].useMarker = !state['MonsterLoot'].useMarker;
             if (action[0] == 'add-toggle') state['MonsterLoot'].addMarker = !state['MonsterLoot'].addMarker;
+            if (action[0] == 'hide-toggle') state['MonsterLoot'].hideResults = !state['MonsterLoot'].hideResults;
             if (action[0] == 'macro') createMacro('config');
         });
 
@@ -679,8 +703,11 @@ var MonsterLoot = MonsterLoot || (function () {
         message += '<b>Extraction Fumbles:</b> <a style=\'' + styles.textButton + '\' href="!spoils --config --fumble-toggle" title="Turn poison extraction fumbles ' + (state['MonsterLoot'].allowFumbles ? 'off' : 'on') + '">' + (state['MonsterLoot'].allowFumbles ? 'ON' : 'OFF') + '</a><br>';
         message += 'On a natural 1, a failed attempt to extract poison will ' + (state['MonsterLoot'].allowFumbles ? '' : '<i>not</i> ') + 'poison the character instead.<br><br>';
 
-        message += '<b>Show Results:</b> <a style=\'' + styles.textButton + '\' href="!spoils --config --show-toggle" title="' + (state['MonsterLoot'].showPlayersRolls ? 'Hide' : 'Show') + ' skill check roll results to players">' + (state['MonsterLoot'].showPlayersRolls ? 'ON' : 'OFF') + '</a><br>';
-        message += 'Players will ' + (state['MonsterLoot'].showPlayersRolls ? '' : '<i>not</i> ') + 'be shown the roll results of all skill checks.<br><hr style="' + styles.hr + '">';
+        message += '<b>Show Roll Results:</b> <a style=\'' + styles.textButton + '\' href="!spoils --config --show-toggle" title="' + (state['MonsterLoot'].showPlayersRolls ? 'Hide skill check roll results from' : 'Show skill check roll results to') + ' players">' + (state['MonsterLoot'].showPlayersRolls ? 'ON' : 'OFF') + '</a><br>';
+        message += 'Players will ' + (state['MonsterLoot'].showPlayersRolls ? '' : '<i>not</i> ') + 'be shown the roll results of all skill checks.<br><br>';
+
+        message += '<b>Hide Spoils:</b> <a style=\'' + styles.textButton + '\' href="!spoils --config --hide-toggle" title="' + (state['MonsterLoot'].hideResults ? 'Hide spoils from' : 'Show spoils to') + ' players">' + (state['MonsterLoot'].hideResults ? 'ON' : 'OFF') + '</a><br>';
+        message += 'Spoils will be ' + (state['MonsterLoot'].hideResults ? 'whispered only to the GM.' : 'shown to all players.') + '<br><hr style="' + styles.hr + '">';
 
         // Marker
         message += '<div style=\'' + styles.title + '\'>Marker</div>';
@@ -705,7 +732,7 @@ var MonsterLoot = MonsterLoot || (function () {
         message += '<p>You currently have <i>' + (_.size(state['MonsterLoot'].monsters) == 1 ? '1 monster' : _.size(state['MonsterLoot'].monsters) + ' monsters') + '</i> in your bestiary.<p>';
         message += '<div style=\'' + styles.buttonWrapper + '\'><a style="' + styles.button + '" href="!spoils --import" title="Add monsters to the bestiary">Import Data</a> <a style="' + styles.button + '" href="!spoils --reset" title="Reset bestiary to the default database of monsters">Reset Bestiary</a></div>';
 
-        message += '<p>See the <a style="' + styles.textButton + '" href="https://github.com/blawson69/MonsterLoot">documentation</a> for complete instructions.</p>';
+        message += '<hr style="' + styles.hr + '"><p>See the <a style="' + styles.textButton + '" href="https://github.com/blawson69/MonsterLoot">documentation</a> for complete instructions.</p>';
         showDialog('Options', message, 'GM');
 	},
 
