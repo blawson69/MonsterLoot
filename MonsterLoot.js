@@ -17,19 +17,19 @@ var MonsterLoot = MonsterLoot || (function () {
 
     //---- INFO ----//
 
-    var version = '2.0',
+    var version = '2.0.1',
     debugMode = false,
     MARKERS,
     ALT_MARKERS = [{name:'red', tag: 'red', url:"#C91010"}, {name: 'blue', tag: 'blue', url: "#1076C9"}, {name: 'green', tag: 'green', url: "#2FC910"}, {name: 'brown', tag: 'brown', url: "#C97310"}, {name: 'purple', tag: 'purple', url: "#9510C9"}, {name: 'pink', tag: 'pink', url: "#EB75E1"}, {name: 'yellow', tag: 'yellow', url: "#E5EB75"}, {name: 'dead', tag: 'dead', url: "X"}],
     styles = {
-        box:  'background-color: #fff; border: 1px solid #000; padding: 8px 10px; border-radius: 6px; margin-left: -40px; margin-right: 0px;',
+        box:  'background-color: #fff; border: 1px solid #000; padding: 8px 10px; border-radius: 6px;',
         title: 'padding: 0 0 10px 0; color: darkolivegreen; font-size: 1.25em; font-weight: bold; font-family: "Comic Sans MS", cursive, sans-serif;',
         name: 'color: darkolivegreen; font-size: 1.25em; font-weight: bold; font-family: "Comic Sans MS", cursive, sans-serif;',
         button: 'background-color: #000; border-width: 0px; border-radius: 5px; padding: 5px 8px; color: #fff; text-align: center;',
         textButton: 'background-color: transparent; border: none; padding: 0; color: #591209; text-decoration: underline;',
         buttonWrapper: 'text-align: center; margin: 10px 0; clear: both;',
         resultBox: 'margin: 4px 3px; padding: 2px 6px; border: 1px solid #c1c1c1; border-radius: 9px; font-variant: small-caps; color: #545454;',
-        result: 'font-size: 1.125em; font-weight: bold; cursor: pointer; font-family: "Lucida Console", Monaco, monospace;',
+        result: 'font-size: 1.125em; font-weight: bold; cursor: pointer; font-family: "Lucida Console", Monaco, monospace; cursor: help;',
         hr: 'margin: 10px 2px 8px; border-top: 1px dashed darkolivegreen;',
         alert: 'color: #C91010; font-size: 1.5em; font-weight: bold; font-variant: small-caps; text-align: center;'
     },
@@ -197,14 +197,14 @@ var MonsterLoot = MonsterLoot || (function () {
             if (typeof monster.poison != 'undefined') monster_poison = {name: monster.poison_name, effect: monster.poison};
             if (parseInt(monster.rations) != 0) {
                 if (monster.rations.toString() == '1') treasure.push('Rations');
-                else treasure.push('Rations (@' + monster.rations + '@)');
+                else treasure.push('Rations (' + rollDice(monster.rations) + ')');
             }
 
             // Roll skill check for amount of spoils
             var spoils = [], num_spoils = 0, skill_mod = getSkillMod(looter_id, monster.skill);
             roll_result = rollSkillCheck(skill_mod + '|' + monster.skill, roll_mod);
             var skill_check_dc = parseInt(monster.cr) >= 2 ? 12 + (parseInt(monster.cr) / 2) : 12;
-            roll_display = '<div style="' + styles.resultBox + '"><span style=\'' + styles.result + (roll_result.base == 1 ? 'color: red;' : (roll_result.base == 20 ? 'color: green;' : '')) + '\' title="' + roll_result.formula + '">' + roll_result.final + '</span> ' + roll_result.skill + ' Check' + (roll_result.adv_dis == '-1' ? ' <span style="cursor: pointer;" title="Disadvantage">[Dis]</span> ' : (roll_result.adv_dis == '+1' ? ' <span style="cursor: pointer;" title="Advantage">[Adv]</span>' : '')) + '</div>';
+            roll_display = '<div style="' + styles.resultBox + '">' + generateRollText(roll_result.final, 'Roll: ' + roll_result.formula + '<br />Result: ' + roll_result.result, (roll_result.base == 1 ? 'fumble' : (roll_result.base == 20 ? 'crit' : ''))) + ' ' + roll_result.skill + ' Check' + (roll_result.adv_dis == '-1' ? ' <span style="cursor: pointer;" title="Disadvantage">[Dis]</span> ' : (roll_result.adv_dis == '+1' ? ' <span style="cursor: pointer;" title="Advantage">[Adv]</span>' : '')) + '</div>';
 
             if (roll_result.final >= skill_check_dc - 5) num_spoils = (_.size(monster.spoils) == 0 ? 0 : (_.size(monster.spoils) == 1 ? 0 : Math.floor(_.size(monster.spoils) / 2)));
             if (roll_result.final >= skill_check_dc) num_spoils = _.size(monster.spoils);
@@ -336,7 +336,8 @@ var MonsterLoot = MonsterLoot || (function () {
         var message, title, monster = getMonster(char);
         var skill_mod = getSkillMod(looter_id, 'Nature'), monster_cr = getCRAsNumber(monster.cr);
         var roll_result = rollSkillCheck(skill_mod + '|Nature', roll_mod);
-        var roll_display = '<div style="' + styles.resultBox + '"><span style=\'' + styles.result + (roll_result.base == 1 ? 'color: red;' : (roll_result.base == 20 ? 'color: green;' : '')) + '\' title="' + roll_result.formula + '">' + roll_result.final + '</span> Nature Check' + (roll_result.adv_dis == '-1' ? ' <span style="cursor: pointer;" title="Disadvantage">[Dis]</span> ' : (roll_result.adv_dis == '+1' ? ' <span style="cursor: pointer;" title="Advantage">[Adv]</span>' : '')) + '</div>';
+        var roll_display = '<div style="' + styles.resultBox + '">' + generateRollText(roll_result.final, 'Roll: ' + roll_result.formula + '<br />Result: ' + roll_result.result, (roll_result.base == 1 ? 'fumble' : (roll_result.base == 20 ? 'crit' : ''))) + ' ' + roll_result.skill + ' Check' + (roll_result.adv_dis == '-1' ? ' <span style="cursor: pointer;" title="Disadvantage">[Dis]</span> ' : (roll_result.adv_dis == '+1' ? ' <span style="cursor: pointer;" title="Advantage">[Adv]</span>' : '')) + '</div>';
+
 
         // DMG gives a flat DC of 20, but let's give some wiggle room
         // based on the monster's challenge rating
@@ -364,17 +365,22 @@ var MonsterLoot = MonsterLoot || (function () {
         state['MonsterLoot'].extracted.push(token_id);
     },
 
-    // Get all player controlled characters that are not "utility characters"
+    // Get all player controlled characters on the page that are not "utility characters"
     getCharsFromPlayerID = function (player_id, page_id) {
-        var char_tokens = [], chars = findObjs({type: 'character', archived: false});
+        var char_tokens = [], class_name = isShapedSheet() ? 'class_and_level' : 'class',
+        npc_name = isShapedSheet() ? 'is_npc' : 'npc';
+
         _.each(findObjs({type: 'graphic', pageid: page_id}), function (token) { if (token.get('represents') !== '') char_tokens.push(token.get('represents')); });
-        chars = _.filter(chars, function (char) {
+
+        var chars = _.filter(findObjs({type: 'character', archived: false}), function (char) {
             var controllers = char.get('controlledby').split(',');
-            var str_attr = findObjs({type: 'attribute', characterid: char.get('id'), name: 'strength'}, {caseInsensitive: true});
-            var str = (_.size(str_attr) > 0) ? str_attr[0].get('current') : 0;
-            if (playerIsGM(player_id)) return (_.indexOf(char_tokens, char.get('id')) != -1 && char.get('controlledby') != '' && parseInt(str) > 0);
-            else return (_.find(controllers, function (x) { return x == player_id; }) && _.indexOf(char_tokens, char.get('id')) != -1 && parseInt(str) > 0);
+            var class_attr = findObjs({type: 'attribute', characterid: char.get('id'), name: class_name}, {caseInsensitive: true});
+            var classval = (_.size(class_attr) > 0) ? class_attr[0].get('current') : '';
+
+            if (playerIsGM(player_id)) return (_.indexOf(char_tokens, char.get('id')) !== -1 && getAttrByName(char.get('id'), npc_name) !== '1' && classval != '');
+            else return (_.find(controllers, function (x) { return x == player_id; }) && _.indexOf(char_tokens, char.get('id')) != -1 && classval != '');
         });
+
         return chars;
     },
 
@@ -517,11 +523,19 @@ var MonsterLoot = MonsterLoot || (function () {
         return mods;
     },
 
+    generateRollText = function (roll, hover, critfumble = '') {
+        var rollText = '', color = '5c6c32';
+        if (critfumble == 'crit') color = '6fb31d';
+        if (critfumble == 'fumble') color = '9b260e';
+        rollText += '<span style=\'' + styles.result + ' color: #' + color + ';\' class="showtip tipsy" title="' + hover + '">' + roll + '</span>';
+        return rollText;
+    },
+
     isShapedSheet = function () {
         var is_shaped = false, char = findObjs({type: 'character'})[0];
         if (char) {
             var charAttrs = findObjs({type: 'attribute', characterid: char.get('id')}, {caseInsensitive: true});
-            if (_.find(charAttrs, function (x) { return x.get('name') == 'character_sheet' && x.get('current').search('Shaped') != -1; })) is_shaped = true;
+            if (_.find(charAttrs, function (x) { return x.get('name') == 'character_sheet' && x.get('current').startsWith('Shaped'); })) is_shaped = true;
         }
         return is_shaped;
     },
@@ -572,8 +586,11 @@ var MonsterLoot = MonsterLoot || (function () {
         var mod = (end_result.mod > 0 ? '+ ' + end_result.mod : (end_result.mod < 0 ? '- ' + Math.abs(end_result.mod) : '+ 0'));
 
         end_result.formula = (end_result.adv_dis != '0' ? '2' : '1') + 'd20' + ((end_result.adv_dis == '+1') ? 'kh1' : (end_result.adv_dis == '-1' ? 'kl1' : '')) + ' '
-            +  mod + '[' + end_result.skill.toLowerCase() + '] = (' + (end_result.adv_dis != '0' ? end_result.roll1 + '+' +  end_result.roll2 : end_result.base) + ')'
-            + mod.replace(/\s/g, '') + (end_result.adv_dis != '0' ? ' = ' + end_result.base + mod.replace(/\s/g, '') : '');
+            +  mod + '[' + end_result.skill.toLowerCase() + ']' ;
+
+        end_result.result = (end_result.adv_dis != '0' ? '(' + end_result.roll1 + '-' +  end_result.roll2 + ')' : end_result.base) + ' '
+            + mod;
+
         return end_result;
     },
 
