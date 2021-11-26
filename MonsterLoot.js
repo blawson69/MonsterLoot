@@ -375,7 +375,9 @@ var MonsterLoot = MonsterLoot || (function () {
         var chars = _.filter(findObjs({type: 'character', archived: false}), function (char) {
             var controllers = char.get('controlledby').split(',');
             var class_attr = findObjs({type: 'attribute', characterid: char.get('id'), name: class_name}, {caseInsensitive: true});
+            var cust_attr = findObjs({type: 'attribute', characterid: char.get('id'), name: 'cust_classname'}, {caseInsensitive: true});
             var classval = (_.size(class_attr) > 0) ? class_attr[0].get('current') : '';
+            if (!isShapedSheet() && classval == '') classval = (_.size(cust_attr) > 0) ? cust_attr[0].get('current') : '';
 
             if (playerIsGM(player_id)) return (_.indexOf(char_tokens, char.get('id')) !== -1 && getAttrByName(char.get('id'), npc_name) !== '1' && classval != '');
             else return (_.find(controllers, function (x) { return x == player_id; }) && _.indexOf(char_tokens, char.get('id')) != -1 && classval != '');
